@@ -2,8 +2,9 @@ package screenshotapi
 
 import (
 	"context"
+	"encoding/json"
+	regexp "github.com/wasilibs/go-re2"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -14,13 +15,13 @@ import (
 
 type Scanner struct{}
 
-// Ensure the Scanner satisfies the interface at compile time
+// Ensure the Scanner satisfies the interface at compile time.
 var _ detectors.Detector = (*Scanner)(nil)
 
 var (
 	client = common.SaneHttpClient()
 
-	//Make sure that your group is surrounded in boundry characters such as below to reduce false positives
+	// Make sure that your group is surrounded in boundary characters such as below to reduce false positives.
 	keyPat = regexp.MustCompile(detectors.PrefixRegex([]string{"screenshotapi"}) + `\b([0-9A-Z]{7}\-[0-9A-Z]{7}\-[0-9A-Z]{7}\-[0-9A-Z]{7})\b`)
 )
 
@@ -28,6 +29,10 @@ var (
 // Use identifiers in the secret preferably, or the provider name.
 func (s Scanner) Keywords() []string {
 	return []string{"screenshotapi"}
+}
+
+type response struct {
+	Screenshot string `json:"screenshot"`
 }
 
 // FromData will find and optionally verify ScreenshotAPI secrets in a given set of bytes.
@@ -50,20 +55,20 @@ func (s Scanner) FromData(ctx context.Context, verify bool, data []byte) (result
 		if verify {
 			timeout := 10 * time.Second
 			client.Timeout = timeout
-			req, err := http.NewRequestWithContext(ctx, "GET", "https://shot.screenshotapi.net/screenshot?token="+resMatch+"&url=https://google.com&width=1920&height=1080&output=image", nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", "https://shot.screenshotapi.net/screenshot?token="+resMatch+"&url=https://google.com&width=1920&height=1080", nil)
 			if err != nil {
 				continue
 			}
 			res, err := client.Do(req)
 			if err == nil {
 				defer res.Body.Close()
-				if res.StatusCode >= 200 && res.StatusCode < 300 {
+				var r response
+				if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+					s1.SetVerificationError(err, resMatch)
+					continue
+				}
+				if res.StatusCode >= 200 && res.StatusCode < 300 && r.Screenshot != "" {
 					s1.Verified = true
-				} else {
-					//This function will check false positives for common test words, but also it will make sure the key appears 'random' enough to be a real key
-					if detectors.IsKnownFalsePositive(resMatch, detectors.DefaultFalsePositives, true) {
-						continue
-					}
 				}
 			}
 		}
@@ -71,5 +76,13 @@ func (s Scanner) FromData(ctx context.Context, verify bool, data []byte) (result
 		results = append(results, s1)
 	}
 
-	return detectors.CleanResults(results), nil
+	return results, nil
+}
+
+func (s Scanner) Type() detectorspb.DetectorType {
+	return detectorspb.DetectorType_ScreenshotAPI
+}
+
+func (s Scanner) Description() string {
+	return "A service for taking screenshots of websites. Websites can include internal or sensitive websites, API keys can access the screenshots."
 }

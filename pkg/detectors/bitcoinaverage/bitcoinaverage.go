@@ -2,9 +2,11 @@ package bitcoinaverage
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
+
+	regexp "github.com/wasilibs/go-re2"
 
 	"github.com/trufflesecurity/trufflehog/v3/pkg/common"
 	"github.com/trufflesecurity/trufflehog/v3/pkg/detectors"
@@ -13,13 +15,13 @@ import (
 
 type Scanner struct{}
 
-// Ensure the Scanner satisfies the interface at compile time
+// Ensure the Scanner satisfies the interface at compile time.
 var _ detectors.Detector = (*Scanner)(nil)
 
 var (
 	client = common.SaneHttpClient()
 
-	//Make sure that your group is surrounded in boundry characters such as below to reduce false positives
+	// Make sure that your group is surrounded in boundary characters such as below to reduce false positives.
 	keyPat = regexp.MustCompile(detectors.PrefixRegex([]string{"bitcoinaverage"}) + `\b([a-zA-Z0-9]{43})\b`)
 )
 
@@ -27,6 +29,11 @@ var (
 // Use identifiers in the secret preferably, or the provider name.
 func (s Scanner) Keywords() []string {
 	return []string{"bitcoinaverage"}
+}
+
+type response struct {
+	Msg     string `json:"msg"`
+	Success bool   `json:"success"`
 }
 
 // FromData will find and optionally verify BitcoinAverage secrets in a given set of bytes.
@@ -46,7 +53,7 @@ func (s Scanner) FromData(ctx context.Context, verify bool, data []byte) (result
 			Raw:          []byte(resMatch),
 		}
 		if verify {
-			req, err := http.NewRequestWithContext(ctx, "GET", "https://apiv2.bitcoinaverage.com/websocket/get_ticket", nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", "https://apiv2.bitcoinaverage.com/websocket/v3/get_ticket", nil)
 			if err != nil {
 				continue
 			}
@@ -55,11 +62,13 @@ func (s Scanner) FromData(ctx context.Context, verify bool, data []byte) (result
 			if err == nil {
 				defer res.Body.Close()
 				if res.StatusCode >= 200 && res.StatusCode < 300 {
-					s1.Verified = true
-				} else {
-					//This function will check false positives for common test words, but also it will make sure the key appears 'random' enough to be a real key
-					if detectors.IsKnownFalsePositive(resMatch, detectors.DefaultFalsePositives, true) {
+					resp := &response{}
+					if err = json.NewDecoder(res.Body).Decode(resp); err != nil {
+						s1.SetVerificationError(err, resMatch)
 						continue
+					}
+					if resp.Success {
+						s1.Verified = true
 					}
 				}
 			}
@@ -68,5 +77,13 @@ func (s Scanner) FromData(ctx context.Context, verify bool, data []byte) (result
 		results = append(results, s1)
 	}
 
-	return detectors.CleanResults(results), nil
+	return results, nil
+}
+
+func (s Scanner) Type() detectorspb.DetectorType {
+	return detectorspb.DetectorType_BitcoinAverage
+}
+
+func (s Scanner) Description() string {
+	return "BitcoinAverage is a service that provides cryptocurrency market data. BitcoinAverage API keys can be used to access and retrieve this market data."
 }
