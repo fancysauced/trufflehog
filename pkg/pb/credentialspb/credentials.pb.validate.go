@@ -135,6 +135,104 @@ var _ interface {
 	ErrorName() string
 } = UnauthenticatedValidationError{}
 
+// Validate checks the field values on SSHAuth with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SSHAuth) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SSHAuth with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in SSHAuthMultiError, or nil if none found.
+func (m *SSHAuth) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SSHAuth) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SSHAuthMultiError(errors)
+	}
+
+	return nil
+}
+
+// SSHAuthMultiError is an error wrapping multiple validation errors returned
+// by SSHAuth.ValidateAll() if the designated constraints aren't met.
+type SSHAuthMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SSHAuthMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SSHAuthMultiError) AllErrors() []error { return m }
+
+// SSHAuthValidationError is the validation error returned by SSHAuth.Validate
+// if the designated constraints aren't met.
+type SSHAuthValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SSHAuthValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SSHAuthValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SSHAuthValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SSHAuthValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SSHAuthValidationError) ErrorName() string { return "SSHAuthValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SSHAuthValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSSHAuth.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SSHAuthValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SSHAuthValidationError{}
+
 // Validate checks the field values on CloudEnvironment with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -685,6 +783,8 @@ func (m *Oauth2) validate(all bool) error {
 
 	// no validation rules for ClientSecret
 
+	// no validation rules for AccessToken
+
 	if len(errors) > 0 {
 		return Oauth2MultiError(errors)
 	}
@@ -865,6 +965,141 @@ var _ interface {
 	ErrorName() string
 } = KeySecretValidationError{}
 
+// Validate checks the field values on AWSSessionTokenSecret with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AWSSessionTokenSecret) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AWSSessionTokenSecret with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AWSSessionTokenSecretMultiError, or nil if none found.
+func (m *AWSSessionTokenSecret) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AWSSessionTokenSecret) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetKey()) < 1 {
+		err := AWSSessionTokenSecretValidationError{
+			field:  "Key",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetSecret()) < 1 {
+		err := AWSSessionTokenSecretValidationError{
+			field:  "Secret",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetSessionToken()) < 1 {
+		err := AWSSessionTokenSecretValidationError{
+			field:  "SessionToken",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return AWSSessionTokenSecretMultiError(errors)
+	}
+
+	return nil
+}
+
+// AWSSessionTokenSecretMultiError is an error wrapping multiple validation
+// errors returned by AWSSessionTokenSecret.ValidateAll() if the designated
+// constraints aren't met.
+type AWSSessionTokenSecretMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AWSSessionTokenSecretMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AWSSessionTokenSecretMultiError) AllErrors() []error { return m }
+
+// AWSSessionTokenSecretValidationError is the validation error returned by
+// AWSSessionTokenSecret.Validate if the designated constraints aren't met.
+type AWSSessionTokenSecretValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AWSSessionTokenSecretValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AWSSessionTokenSecretValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AWSSessionTokenSecretValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AWSSessionTokenSecretValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AWSSessionTokenSecretValidationError) ErrorName() string {
+	return "AWSSessionTokenSecretValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AWSSessionTokenSecretValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAWSSessionTokenSecret.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AWSSessionTokenSecretValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AWSSessionTokenSecretValidationError{}
+
 // Validate checks the field values on AWS with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.
@@ -886,9 +1121,27 @@ func (m *AWS) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Key
+	if utf8.RuneCountInString(m.GetKey()) < 1 {
+		err := AWSValidationError{
+			field:  "Key",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Secret
+	if utf8.RuneCountInString(m.GetSecret()) < 1 {
+		err := AWSValidationError{
+			field:  "Secret",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Region
 
@@ -1203,43 +1456,47 @@ var _ interface {
 	ErrorName() string
 } = GitHubAppValidationError{}
 
-// Validate checks the field values on AccessToken with the rules defined in
+// Validate checks the field values on SlackTokens with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *AccessToken) Validate() error {
+func (m *SlackTokens) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AccessToken with the rules defined in
+// ValidateAll checks the field values on SlackTokens with the rules defined in
 // the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in AccessTokenMultiError, or
+// result is a list of violation errors wrapped in SlackTokensMultiError, or
 // nil if none found.
-func (m *AccessToken) ValidateAll() error {
+func (m *SlackTokens) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AccessToken) validate(all bool) error {
+func (m *SlackTokens) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	// no validation rules for Token
+	// no validation rules for AppToken
+
+	// no validation rules for BotToken
+
+	// no validation rules for ClientToken
 
 	if len(errors) > 0 {
-		return AccessTokenMultiError(errors)
+		return SlackTokensMultiError(errors)
 	}
 
 	return nil
 }
 
-// AccessTokenMultiError is an error wrapping multiple validation errors
-// returned by AccessToken.ValidateAll() if the designated constraints aren't met.
-type AccessTokenMultiError []error
+// SlackTokensMultiError is an error wrapping multiple validation errors
+// returned by SlackTokens.ValidateAll() if the designated constraints aren't met.
+type SlackTokensMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AccessTokenMultiError) Error() string {
+func (m SlackTokensMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1248,11 +1505,11 @@ func (m AccessTokenMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AccessTokenMultiError) AllErrors() []error { return m }
+func (m SlackTokensMultiError) AllErrors() []error { return m }
 
-// AccessTokenValidationError is the validation error returned by
-// AccessToken.Validate if the designated constraints aren't met.
-type AccessTokenValidationError struct {
+// SlackTokensValidationError is the validation error returned by
+// SlackTokens.Validate if the designated constraints aren't met.
+type SlackTokensValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1260,22 +1517,22 @@ type AccessTokenValidationError struct {
 }
 
 // Field function returns field value.
-func (e AccessTokenValidationError) Field() string { return e.field }
+func (e SlackTokensValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AccessTokenValidationError) Reason() string { return e.reason }
+func (e SlackTokensValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AccessTokenValidationError) Cause() error { return e.cause }
+func (e SlackTokensValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AccessTokenValidationError) Key() bool { return e.key }
+func (e SlackTokensValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AccessTokenValidationError) ErrorName() string { return "AccessTokenValidationError" }
+func (e SlackTokensValidationError) ErrorName() string { return "SlackTokensValidationError" }
 
 // Error satisfies the builtin error interface
-func (e AccessTokenValidationError) Error() string {
+func (e SlackTokensValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1287,14 +1544,14 @@ func (e AccessTokenValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAccessToken.%s: %s%s",
+		"invalid %sSlackTokens.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AccessTokenValidationError{}
+var _ error = SlackTokensValidationError{}
 
 var _ interface {
 	Field() string
@@ -1302,4 +1559,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AccessTokenValidationError{}
+} = SlackTokensValidationError{}
